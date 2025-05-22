@@ -3,7 +3,7 @@ module sweng-task
 go 1.24.1
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/gofiber/fiber/v2 v2.52.7
 	github.com/google/uuid v1.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	go.uber.org/zap v1.27.0
