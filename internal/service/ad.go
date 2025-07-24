@@ -38,7 +38,7 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 	highestBidderId := "DummyString"
 	// Applying bucket sort, because as i need limited number of ads, so at scale (5K line items) we don't need to sort the whole array
 	// we just need to sort the highest value bucket until we hit desired amount of result. plus bucket sort is O(N) in insert and retrival
-	// does not need O(N) at all! We can teak the minBin,maxBid and bucketGap later to increase the performance
+	// does not need O(N) at all! We can tweak the minBin,maxBid and bucketGap later to increase the performance
 	minBid := 0.01
 	maxBid := 10.0
 	bucketGap := 0.50
@@ -56,6 +56,7 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 		buckets[idx] = append(buckets[idx], item)
 	}
 	// bucket sort prep ends
+	// There can be lineitems that does not have any targeting, created separate step for that
 	score := s.runTimeDB.GetInitialScoringWithTargetFreeItems()
 	paramMatch := map[string]int{}
 	// Initial scoring loop
