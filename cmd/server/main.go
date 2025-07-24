@@ -13,7 +13,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	fiberlogger "github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.uber.org/zap"
 )
 
@@ -41,6 +40,14 @@ func main() {
 
 	// Initialize services
 	lineItemService := service.NewLineItemService(log)
+
+	generator := service.NewDataGenerator(log, lineItemService)
+	generator.GenerateLineItems()
+	runTimeDBService := service.NewRunTimeDB(log)
+	advertisementService := service.NewAdService(log, runTimeDBService, lineItemService)
+	dataProcessorService := service.NewDataProcessorService(log, runTimeDBService, lineItemService)
+	onload := service.NewOnloadService(log, dataProcessorService)
+	onload.Start()
 	// Note: AdService implementation is left for the candidate
 
 	// Setup Fiber app
@@ -52,7 +59,10 @@ func main() {
 	})
 
 	// Register middleware
-	app.Use(recover.New())
+	//app.Use(recover.New())
+	//app.Use(recover.New(recover.Config{
+	//	EnableStackTrace: true,
+	//}))
 	app.Use(fiberlogger.New())
 	app.Use(cors.New())
 
@@ -67,8 +77,9 @@ func main() {
 	api.Get("/lineitems", lineItemHandler.GetAll)
 	api.Get("/lineitems/:id", lineItemHandler.GetByID)
 
+	adHandler := handler.NewAdHandler(log, advertisementService)
 	// Ad endpoints - TO BE IMPLEMENTED BY CANDIDATE
-	// api.Get("/ads", adHandler.GetWinningAds)
+	api.Get("/ads", adHandler.GetWinningAds)
 
 	// Tracking endpoint - TO BE IMPLEMENTED BY CANDIDATE
 	// api.Post("/tracking", trackingHandler.TrackEvent)

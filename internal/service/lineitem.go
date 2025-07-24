@@ -105,7 +105,7 @@ func (s *LineItemService) FindMatchingLineItems(placement string, category, keyw
 	defer s.mu.RUnlock()
 
 	var result []*model.LineItem
-
+	// O(n^2)
 	for _, item := range s.items {
 		// Skip items not matching the placement or not active
 		if item.Placement != placement || item.Status != model.LineItemStatusActive {
@@ -145,3 +145,8 @@ func (s *LineItemService) FindMatchingLineItems(placement string, category, keyw
 
 	return result, nil
 }
+
+/*
+Main FindMatchingLineItems function is slow and have time complexity of O(n^2) but this V2 algorithm's time complexity is -> 0.1N(log N)
+due to variable swap on runtime while updating database
+*/

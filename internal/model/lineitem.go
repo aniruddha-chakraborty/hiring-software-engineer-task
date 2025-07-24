@@ -47,6 +47,7 @@ type Ad struct {
 	Bid          float64 `json:"bid"`
 	Placement    string  `json:"placement"`
 	ServeURL     string  `json:"serve_url"`
+	Relevance    int     `json:"relevance"`
 }
 
 // TrackingEventType represents the type of tracking event
