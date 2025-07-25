@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -13,8 +11,7 @@ services:
       - APP_LOG_LEVEL=debug
       - SERVER_PORT=8080
       - SERVER_TIMEOUT=30s
-    volumes:
-      - ./data:/app/data
+      - BROKER=kafka:9092
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -22,3 +19,54 @@ services:
       timeout: 10s
       retries: 3
       start_period: 5s
+    depends_on:
+      - kafka
+      - clickhouse
+    networks:
+      - ad-network
+
+  kafka:
+    image: bitnami/kafka:3.6.0
+    container_name: kafka
+    ports:
+      - "19092:19092"
+    environment:
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_LISTENERS: INTERNAL://:9092,EXTERNAL://:19092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:19092
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - ad-network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: mysecretpassword
+      CLICKHOUSE_ADMIN_USER: admin_user
+      CLICKHOUSE_ADMIN_PASSWORD: admin_pass
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - ad-network
+    depends_on:
+      - kafka
+
+networks:
+  ad-network:
+    driver: bridge

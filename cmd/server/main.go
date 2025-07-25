@@ -40,6 +40,12 @@ func main() {
 
 	// Initialize services
 	lineItemService := service.NewLineItemService(log)
+	KafkaConfig := config.KafkaConfigLoad()
+	pubSub := service.NewPubSub(log, cfg)
+	errPubSub := pubSub.Connect(KafkaConfig)
+	if errPubSub != nil {
+		panic(fmt.Sprintf("Failed to connect to Kafka: %v", errPubSub))
+	}
 
 	generator := service.NewDataGenerator(log, lineItemService)
 	generator.GenerateLineItems()
@@ -48,6 +54,7 @@ func main() {
 	dataProcessorService := service.NewDataProcessorService(log, runTimeDBService, lineItemService)
 	onload := service.NewOnloadService(log, dataProcessorService)
 	onload.Start()
+
 	// Note: AdService implementation is left for the candidate
 
 	// Setup Fiber app
@@ -78,11 +85,10 @@ func main() {
 	api.Get("/lineitems/:id", lineItemHandler.GetByID)
 
 	adHandler := handler.NewAdHandler(log, advertisementService)
-	// Ad endpoints - TO BE IMPLEMENTED BY CANDIDATE
 	api.Get("/ads", adHandler.GetWinningAds)
 
-	// Tracking endpoint - TO BE IMPLEMENTED BY CANDIDATE
-	// api.Post("/tracking", trackingHandler.TrackEvent)
+	trackingHandler := handler.NewTrackingHandler(log, pubSub)
+	api.Post("/tracking", trackingHandler.TrackEvent)
 
 	// Start server
 	go func() {
