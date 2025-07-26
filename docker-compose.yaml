@@ -6,6 +6,7 @@ services:
     container_name: ad-bidding-service
     ports:
       - "8080:8080"
+      - "9100:9100"
     environment:
       - APP_ENVIRONMENT=development
       - APP_LOG_LEVEL=debug
@@ -30,12 +31,13 @@ services:
     container_name: kafka
     ports:
       - "19092:19092"
+      # NOTE: We no longer expose the JMX port directly to the host
     environment:
+      # Listener and Kraft Configuration
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CFG_LISTENERS: INTERNAL://:9092,EXTERNAL://:19092,CONTROLLER://:9093
       KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:19092
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
-
       KAFKA_CFG_NODE_ID: 1
       KAFKA_CFG_PROCESS_ROLES: broker,controller
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
@@ -45,12 +47,28 @@ services:
     networks:
       - ad-network
 
+#  kafka-exporter:
+#    image: bitnami/jmx-exporter:0.20.0
+#    container_name: kafka-exporter
+#    ports:
+#      - "5556:5556"
+#    environment:
+#      JMX_SERVICE_URL: "service:jmx:rmi:///jndi/rmi://kafka:9999/jmxrmi"
+#    restart: unless-stopped
+#    volumes:
+#      - ./jmx-exporter-config.yml:/opt/bitnami/jmx-exporter/config.yml
+#    networks:
+#      - ad-network
+#    depends_on:
+#      - kafka
+
   clickhouse:
     image: clickhouse/clickhouse-server:23.8
     container_name: clickhouse
     ports:
       - "8123:8123"
       - "9000:9000"
+      - "9363:9363"
     environment:
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: mysecretpassword
@@ -58,6 +76,7 @@ services:
       CLICKHOUSE_ADMIN_PASSWORD: admin_pass
     volumes:
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./metrics.xml:/etc/clickhouse-server/config.d/metrics.xml
     ulimits:
       nofile:
         soft: 262144
@@ -66,6 +85,34 @@ services:
       - ad-network
     depends_on:
       - kafka
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - ad-network
+
+  grafana:
+    image: grafana/grafana:9.5.3
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=my_admin
+      - GF_SECURITY_ADMIN_PASSWORD=super
+    volumes:
+      - ./monitoring/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - ad-network
+    depends_on:
+      - prometheus
 
 networks:
   ad-network:

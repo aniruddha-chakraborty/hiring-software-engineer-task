@@ -21,6 +21,10 @@ Your challenge is to:
 * [Go](https://golang.org/doc/install) 1.24+
 * [Docker](https://docs.docker.com/engine/install/)
 * [Compose](https://docs.docker.com/compose/install/)
+* [Kafka](https://kafka.apache.org/)
+* [Clickhouse](https://clickhouse.com/)
+* [Prometheus](https://prometheus.io/)
+* [Graphana](https://grafana.com/)
 
 ## Setup & Environment
 

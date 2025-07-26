@@ -9,9 +9,10 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	App    AppConfig    `split_words:"true"`
-	Server ServerConfig `split_words:"true"`
-	PubSub PubSubConfig `split_words:"true"`
+	App     AppConfig     `split_words:"true"`
+	Server  ServerConfig  `split_words:"true"`
+	PubSub  PubSubConfig  `split_words:"true"`
+	Metrics MetricsConfig `split_words:"true"`
 }
 
 // AppConfig contains application-specific configuration
@@ -34,6 +35,10 @@ type PubSubConfig struct {
 	Topic         string `default:"tracking-events"`
 	RetryMax      int    `default:"3"`
 	ReturnSuccess bool   `default:"true"`
+}
+
+type MetricsConfig struct {
+	Port int `default:"9100"`
 }
 
 //Kafka config spin up

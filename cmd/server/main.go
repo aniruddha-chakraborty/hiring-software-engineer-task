@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	fiberlogger "github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.uber.org/zap"
 )
 
@@ -38,6 +39,8 @@ func main() {
 		"server_port", cfg.Server.Port,
 	)
 
+	metrics := service.NewMetricsService(log, cfg)
+	go metrics.Start()
 	// Initialize services
 	lineItemService := service.NewLineItemService(log)
 	KafkaConfig := config.KafkaConfigLoad()
@@ -54,9 +57,7 @@ func main() {
 	dataProcessorService := service.NewDataProcessorService(log, runTimeDBService, lineItemService)
 	onload := service.NewOnloadService(log, dataProcessorService)
 	onload.Start()
-
-	// Note: AdService implementation is left for the candidate
-
+	
 	// Setup Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:      "Ad Bidding Service",
@@ -66,10 +67,8 @@ func main() {
 	})
 
 	// Register middleware
-	//app.Use(recover.New())
-	//app.Use(recover.New(recover.Config{
-	//	EnableStackTrace: true,
-	//}))
+	app.Use(recover.New())
+	app.Use(metrics.NewPrometheusMiddleware())
 	app.Use(fiberlogger.New())
 	app.Use(cors.New())
 

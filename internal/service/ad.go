@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"math"
+	_ "slices"
+	"sort"
 	"sweng-task/internal/model"
 )
 
@@ -34,7 +36,7 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 	if len(s.runTimeDB.GetPlacements(placement)) == 0 {
 		return []*model.Ad{}, nil
 	}
-
+	relevanceSore := map[string]int{}
 	highestBid := -1.0
 	highestBidderId := "DummyString"
 	// Applying bucket sort, because as i need limited number of ads, so at scale (5K line items) we don't need to sort the whole array
@@ -78,6 +80,7 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 			score[id] += CoreScoring["paramWeight"]
 		}
 		insertIntoBucket(s.lis.items[id], score[id])
+		relevanceSore[id] += 50
 	}
 
 	// Category scoring loop
@@ -91,14 +94,23 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 			score[id] += CoreScoring["paramWeight"]
 		}
 		insertIntoBucket(s.lis.items[id], score[id])
+		relevanceSore[id] += 50
 	}
 
 	if highestBidderId != "DummyString" {
-		// priority scoring happened
+		// priority scoring done
 		score[highestBidderId] += CoreScoring["bidWeight"]
 	}
+	// Even though it seems like This is Only worst case O(N^2), and that worst case is impossible to hit
 	result := []*model.Ad{}
 	for i := bucketCount - 1; i >= 0 && len(result) < limit; i-- {
+		// This is running on very few number of items, that why this sort will is extremly efficient, also i think we can do a pre-sort
+		// type stuff during the insertion which will reduce sorting time more in big scale
+		sort.Slice(buckets[i], func(a, b int) bool {
+			idA := buckets[i][a].ID
+			idB := buckets[i][b].ID
+			return score[idA] > score[idB]
+		})
 		for _, ad := range buckets[i] {
 			result = append(result, &model.Ad{
 				ID:           ad.ID,
@@ -107,7 +119,8 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 				Bid:          s.lis.items[ad.ID].Bid,
 				Placement:    s.lis.items[ad.ID].Placement,
 				ServeURL:     fmt.Sprintf("https://content.realtimemediatool.com/data/%s", ad.ID),
-				Relevance:    (paramMatch[ad.ID] * 100) / s.runTimeDB.ParameterCount[ad.ID],
+				// Normally, there will be multiple keywords and you need to match with
+				Relevance: relevanceSore[ad.ID],
 			})
 			if len(result) == limit {
 				return result, nil
