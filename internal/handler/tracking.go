@@ -31,7 +31,7 @@ func (t *TrackingHandler) TrackEvent(c *fiber.Ctx) error {
 		})
 	}
 	if err := c.BodyParser(&query); err != nil {
-		return c.Status(400).JSON(fiber.Map{"message": "Invalid JSON"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid JSON"})
 	}
 	if err := validate.Struct(query); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -56,5 +56,5 @@ func (t *TrackingHandler) TrackEvent(c *fiber.Ctx) error {
 	// conversion to string possible from query model.TrackingEvent to json, but then i have to sarama have change it to byte
 	// that's same thing, that's why msg was built like this.
 	t.pubSub.Publish(msg)
-	return c.JSON(fiber.StatusOK)
+	return c.JSON(fiber.StatusAccepted)
 }

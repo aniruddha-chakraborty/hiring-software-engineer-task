@@ -35,7 +35,13 @@ func (h *LineItemHandler) Create(c *fiber.Ctx) error {
 	}
 
 	// Note: Validation logic should be implemented by the candidate
-
+	if err := validate.Struct(input); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"code":    fiber.StatusBadRequest,
+			"message": "Invalid query parameters",
+			"details": err.Error(),
+		})
+	}
 	lineItem, err := h.service.Create(input)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -89,6 +95,5 @@ func (h *LineItemHandler) GetAll(c *fiber.Ctx) error {
 			"details": err.Error(),
 		})
 	}
-
 	return c.Status(fiber.StatusOK).JSON(lineItems)
 }

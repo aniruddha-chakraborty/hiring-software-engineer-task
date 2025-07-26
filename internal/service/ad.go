@@ -7,10 +7,10 @@ import (
 	"sweng-task/internal/model"
 )
 
-var CoreScoring map[string]float32 = map[string]float32{
-	"keywordWeight":  2,
+var CoreScoring map[string]float64 = map[string]float64{
+	"keywordWeight":  5,
 	"categoryWeight": 5,
-	"bidWeight":      10,
+	"bidWeight":      6,
 	"paramWeight":    5,
 }
 
@@ -30,6 +30,7 @@ func NewAdService(log *zap.SugaredLogger, runTimeDB *RunTimeDB, lis *LineItemSer
 
 // This whole thing optimises the FindMatchingLineItems and the ad selection part together, It's much more efficient
 func (s *AdService) GetAd(placement string, keyword string, category string, limit int) ([]*model.Ad, error) {
+
 	if len(s.runTimeDB.GetPlacements(placement)) == 0 {
 		return []*model.Ad{}, nil
 	}
@@ -45,8 +46,8 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 	bucketCount := int(math.Ceil((maxBid - minBid) / bucketGap))
 	buckets := make([][]*model.LineItem, bucketCount)
 
-	insertIntoBucket := func(item *model.LineItem) {
-		idx := int((item.Bid - minBid) / bucketGap)
+	insertIntoBucket := func(item *model.LineItem, score float64) {
+		idx := int((score - minBid) / bucketGap)
 		if idx < 0 {
 			idx = 0
 		}
@@ -62,7 +63,7 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 	// Initial scoring loop
 	for id := range score {
 		highestBid, highestBidderId = s.updateHighestBid(highestBid, highestBidderId, id)
-		insertIntoBucket(s.lis.items[id])
+		insertIntoBucket(s.lis.items[id], score[id])
 	}
 
 	// Keyword scoring loop
@@ -76,7 +77,7 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 		if paramMatch[id] == s.runTimeDB.ParameterCount[id] {
 			score[id] += CoreScoring["paramWeight"]
 		}
-		insertIntoBucket(s.lis.items[id])
+		insertIntoBucket(s.lis.items[id], score[id])
 	}
 
 	// Category scoring loop
@@ -89,14 +90,13 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 		if paramMatch[id] == s.runTimeDB.ParameterCount[id] {
 			score[id] += CoreScoring["paramWeight"]
 		}
-		insertIntoBucket(s.lis.items[id])
+		insertIntoBucket(s.lis.items[id], score[id])
 	}
 
 	if highestBidderId != "DummyString" {
 		// priority scoring happened
 		score[highestBidderId] += CoreScoring["bidWeight"]
 	}
-
 	result := []*model.Ad{}
 	for i := bucketCount - 1; i >= 0 && len(result) < limit; i-- {
 		for _, ad := range buckets[i] {

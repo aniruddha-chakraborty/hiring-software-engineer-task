@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -42,9 +41,8 @@ func (a *AdHandler) GetWinningAds(c *fiber.Ctx) error {
 		})
 	}
 
-	advertisements, err := a.ad.GetAd(query.Placement, query.Keyword, query.Category, 4)
+	advertisements, err := a.ad.GetAd(query.Placement, query.Keyword, query.Category, query.Limit)
 	if err != nil {
-		spew.Dump(err)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"code":    fiber.StatusNotFound,
 			"message": "No matching ads found",

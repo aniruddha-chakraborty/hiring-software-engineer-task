@@ -319,6 +319,9 @@ components:
           type: string
           description: URL to serve for this ad
           example: "/ad/serve/li_1234567890"
+        relevance:
+          type: number
+          description: Match percentage with particular user
     TrackingEvent:
       type: object
       required:
