@@ -239,7 +239,7 @@ Choose solutions that best fit the requirements and consider factors like scalab
 Using data compression as much as possible, using numerical data is much easier to compress
 For example i would not use LineItemID as string, i would use as an integer because when dumping on clickhouse
 That single column will weight a hell lot! its not a problem if data is small but we are taking about
-billion not trillions data points if possible. And we want to show the users as far reports as possible
+billions, if not trillions data points if possible. And we want to show the users as far reports as possible
 Even with these measurement we still have detach 1 year old or 6 month old partition and store it somewhere.
 And data have to partition based on time.
 ```
