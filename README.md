@@ -32,34 +32,18 @@ This repository provides a basic service structure to get started:
 
 ```bash
 # Build and start the service
-docker compose down -v && docker compose up --build -d
 
+docker compose down -v && docker compose up --build -d
 # Check service status
 curl http://localhost:8080/health
-
-# Test creating a line item
-curl -X POST http://localhost:8080/api/v1/lineitems \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Summer Sale Banner",
-    "advertiser_id": "adv123",
-    "bid": 2.5,
-    "budget": 1000.0,
-    "placement": "homepage_top",
-    "categories": ["electronics", "sale"],
-    "keywords": ["summer", "discount"]
-  }'
-
-# Get winning ads for a placement (you'll need to implement this)
-curl -X GET "http://localhost:8080/api/v1/ads?placement=homepage_top&category=electronics&keyword=discount"
 ```
-## Test 
 
+## Systems Check
+Check if metrics and up and running
 ```bash
-
-
+curl -X GET "http://localhost:9090/targets?search="
 ```
-
+![Prometheus target](https://i.postimg.cc/X79V7Xjv/Screenshot-2025-07-27-at-15-52-10.png)
 
 ## Configuration
 
@@ -67,14 +51,21 @@ The service uses environment variables for configuration, using [Kelsey Hightowe
 
 Available environment variables:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| APP_NAME | Application name | "Ad Bidding Service" |
-| APP_ENVIRONMENT | Running environment | "development" |
-| APP_LOG_LEVEL | Log level (debug, info, warn, error) | "info" |
-| APP_VERSION | Application version | "1.0.0" |
-| SERVER_PORT | HTTP server port | 8080 |
-| SERVER_TIMEOUT | Server timeout for requests | "30s" |
+| Variable        | Description                          | Default |
+|-----------------|--------------------------------------|---------|
+| APP_NAME        | Application name                     | "Ad Bidding Service" |
+| APP_ENVIRONMENT | Running environment                  | "development" |
+| APP_LOG_LEVEL   | Log level (debug, info, warn, error) | "info" |
+| APP_VERSION     | Application version                  | "1.0.0" |
+| SERVER_PORT     | HTTP server port                     | 8080 |
+| SERVER_TIMEOUT  | Server timeout for requests          | "30s" |
+| BROKER          | Kafka Broker                         | "kafka:9092" |
+
+
+## Test Setup
+Separate cli tool is available to test this
+https://github.com/aniruddha-chakraborty/hiring-software-engineer-task-test
+Please follow the documentation 
 
 ## API Structure
 
@@ -134,29 +125,56 @@ Your solution will be evaluated based on:
 The current implementation uses in-memory storage for simplicity, but this is not suitable for production. You are free to use any storage solution you prefer.
 Choose solutions that best fit the requirements and consider factors like scalability, reliability, and performance.
 
+→ Relational database(Postgres/mysql) - for Stroning line items  
+→ Column database (druid/clickhouse/bigquery) - for analytics  
+→ key value database (keydb/aerospike) - for feature implementation like frequency capping need database like these
+
+## Storage cost savings
+
+Using data compression as much as possible, using numerical data is much easier to compress
+For example i would not use LineItemID as string, i would use as an integer because when dumping on clickhouse
+That single column will weight a hell lot! its not a problem if data is small but we are taking about
+billion not trillions data points if possible. And we want to show the users as far reports as possible
+Even with these measurement we still have detach 1 year old or 6 month old partition and store it somewhere. 
+
 ## Scaling Considerations
 
 As part of your solution, please include a section in your documentation addressing the following questions:
 
 1. How would you scale this service to handle millions of ad requests per minute?
+```bash
+→ Stateless microservice architecture
+→ Multiple type of database which is easy to scale and can be switch to
+  cloud based infra, because when team size is small, it is s better
+  to have cloud backup even though it seems like cost is high
+→  Async processing of tracking data with kafka and clickhouse
+→ All microservice must be able to scale horizontally 
+→ When ever writing code, we should think like from time complexity perspective or ops/sec perspective
+
+```
 2. What bottlenecks do you anticipate and how would you address them?
+```bash
+→ Most complex problem i can imagine is, distribution how much a particulaer bidding server ( there will 100s of bidding server running )
+ can spend on campaign. Because we cant forward all the load to one server 
+ I would implement some kind algorithm so that a particular bidding server knows how much to spend to prevent over spending
+```
 3. How would you design the system to ensure high availability and fault tolerance?
+```bash
+→ Replication - multiple Kafka brokers, multi-AZ ClickHouse
+
+→ Load balancing - distribute traffic
+
+→ Failover - kubernetes deployment is a must
+```
 4. What data storage and access patterns would you recommend for different components (line items, tracking events, etc.)?
+```bash
+→  For Storing lineitems - Relational database (postgres,mysql/mariadb)
+→  For For tracking - Columner database (clickhouse,druid)
+```
 5. How would you implement caching to improve performance?
-
-## Getting Started
-
-1. Clone this repository
-2. Explore the existing code to understand the current implementation
-3. Run the service locally using docker-compose
-4. Implement the required features
-5. Update tests and documentation
-6. Submit your solution
-
-For local development:
-- Build and run: `go run ./cmd/server`
-- Run tests: `go test ./...`
-- Build binary: `go build -o adserver ./cmd/server`
+```bash
+  I already implemented the type of caching system.
+```
 
 ## Project Structure
 
@@ -175,6 +193,11 @@ For local development:
 ├── go.mod                  # Go module definition
 ├── go.sum                  # Go module checksums
 └── README.md               # Project documentation
+└── .gitignore              # Ignore unimportant files
+└── jmx-exporter-config.yml # Kafka metrics exporter config
+└── metrics.xml             # Clickhouse config for exporting metrics
+└── prometheus.yml          # Prometheus scraping configs are here
+└── schema.sql              # Clickhouse database schema
 ```
 
-Good luck!
+## Performance test and Results
