@@ -18,7 +18,7 @@ Your challenge is to:
 
 ## Prerequisites
 
-* [Go](https://golang.org/doc/install) 1.24+
+* [Go](https://golang.org/doc/install)
 * [Docker](https://docs.docker.com/engine/install/)
 * [Compose](https://docs.docker.com/compose/install/)
 * [Kafka](https://kafka.apache.org/)
@@ -66,6 +66,112 @@ Available environment variables:
 Separate cli tool is available to test this
 https://github.com/aniruddha-chakraborty/hiring-software-engineer-task-test
 Please follow the documentation 
+
+## ✅ Test Run Results
+**Ad Selection Test**:
+```bash
+achakraborty@achakraborty-MacBook-Pro hiring-software-engineer-task-test % go run main.go ad-test                                            
+--- Running Simplified & Targeted Ad Logic Tests (First 5 Items) ---
+
+--- [Test 1/5] Testing for: 'Summer Sale Banner' ---
+  - Using its own targeting: placement='homepage_top', category='electronics', keyword='summer'
+  - Prediction: The API should return 'Summer Sale Banner' in the list of ads.
+  - CURL Command: curl -X GET 'http://localhost:8080/api/v1/ads?category=electronics&keyword=summer&limit=4&placement=homepage_top'
+  - ACTION: Calling the real API...
+  [RESULT] ✅ PASS: Predicted ad 'Summer Sale Banner' was found in the returned list of 4 ads.
+
+--- [Test 2/5] Testing for: 'Winter Clearance Promo' ---
+  - Using its own targeting: placement='video_preroll', category='fashion', keyword='clearance'
+  - Prediction: The API should return 'Winter Clearance Promo' in the list of ads.
+  - CURL Command: curl -X GET 'http://localhost:8080/api/v1/ads?category=fashion&keyword=clearance&limit=4&placement=video_preroll'
+  - ACTION: Calling the real API...
+  [RESULT] ✅ PASS: Predicted ad 'Winter Clearance Promo' was found in the returned list of 4 ads.
+
+--- [Test 3/5] Testing for: 'Travel Deals Campaign' ---
+  - Using its own targeting: placement='article_inline_1', category='travel', keyword='exclusive'
+  - Prediction: The API should return 'Travel Deals Campaign' in the list of ads.
+  - CURL Command: curl -X GET 'http://localhost:8080/api/v1/ads?category=travel&keyword=exclusive&limit=4&placement=article_inline_1'
+  - ACTION: Calling the real API...
+  [RESULT] ✅ PASS: Predicted ad 'Travel Deals Campaign' was found in the returned list of 4 ads.
+
+--- [Test 4/5] Testing for: 'Gaming Weekend Blast' ---
+  - Using its own targeting: placement='homepage_top', category='gaming', keyword='sale'
+  - Prediction: The API should return 'Gaming Weekend Blast' in the list of ads.
+  - CURL Command: curl -X GET 'http://localhost:8080/api/v1/ads?category=gaming&keyword=sale&limit=4&placement=homepage_top'
+  - ACTION: Calling the real API...
+  [RESULT] ✅ PASS: Predicted ad 'Gaming Weekend Blast' was found in the returned list of 4 ads.
+
+--- [Test 5/5] Testing for: 'Home Essentials Discount' ---
+  - Using its own targeting: placement='video_preroll', category='home', keyword='deal'
+  - Prediction: The API should return 'Home Essentials Discount' in the list of ads.
+  - CURL Command: curl -X GET 'http://localhost:8080/api/v1/ads?category=home&keyword=deal&limit=4&placement=video_preroll'
+  - ACTION: Calling the real API...
+  [RESULT] ✅ PASS: Predicted ad 'Home Essentials Discount' was found in the returned list of 4 ads.
+
+--- Test Summary: 5/5 tests passed. ---
+```
+
+**E2E Tracking Test**:
+
+```bash
+achakraborty@achakraborty-MacBook-Pro hiring-software-engineer-task-test % go run main.go e2e-tracking-test                                  
+--- Running End-to-End Tracking Pipeline Test ---
+
+[PHASE 1] Getting initial row count from ClickHouse...
+  - Initial row count in ads_final is: 11394748
+
+[PHASE 2] Sending tracking events to the API...
+
+--- Curl Request #1 ---
+curl -X POST 'http://localhost:8080/api/v1/tracking' -H 'Content-Type: application/json' -d '{"event_type":"impression","line_item_id":"li_5c0ebd78-0ca4-4abe-b856-9ab57209ca03","placement":"article_inline_1","user_id":"e2e-user-1","metadata":{"browser":"safari","device":"tablet"}}'
+
+--- Curl Request #2 ---
+curl -X POST 'http://localhost:8080/api/v1/tracking' -H 'Content-Type: application/json' -d '{"event_type":"impression","line_item_id":"li_5c0ebd78-0ca4-4abe-b856-9ab57209ca03","placement":"article_inline_1","user_id":"e2e-user-2","metadata":{"browser":"safari","device":"tablet"}}'
+
+... (Requests #3 to #14 omitted for brevity)
+
+--- Curl Request #15 ---
+curl -X POST 'http://localhost:8080/api/v1/tracking' -H 'Content-Type: application/json' -d '{"event_type":"impression","line_item_id":"li_5c0ebd78-0ca4-4abe-b856-9ab57209ca03","placement":"article_inline_1","user_id":"e2e-user-15","metadata":{"browser":"safari","device":"tablet"}}'
+
+  - Successfully sent 15 tracking events.
+
+[PHASE 3] Waiting 15 seconds for Kafka and ClickHouse to ingest the data...
+
+[PHASE 4] Querying ClickHouse for final row count...
+  - Final row count in ads_final is: 11394763
+
+[RESULT]
+  ✅ PASS: Sent 15 events. Row count correctly increased from 11394748 to 11394763.
+
+--- Test Complete ---
+```
+
+**Validation tests**:
+
+```bash
+achakraborty@achakraborty-MacBook-Pro hiring-software-engineer-task-test % go run main.go validation-test
+--- Running Line Item Creation Validation Tests ---
+
+[TEST] Creating a completely valid line item
+  [RESULT] ✅ PASS: Received expected status 201
+
+[TEST] Name longer than 100 characters
+  [RESULT] ✅ PASS: Received expected status 400
+
+[TEST] Bid less than 0.1
+  [RESULT] ✅ PASS: Received expected status 400
+
+[TEST] Budget greater than 10000
+  [RESULT] ✅ PASS: Received expected status 400
+
+[TEST] Placement not in the allowed list
+  [RESULT] ✅ PASS: Received expected status 400
+
+[TEST] Missing required 'name' field
+  [RESULT] ✅ PASS: Received expected status 400
+
+--- Validation Test Summary: 6/6 tests passed. ---
+```
 
 ## API Structure
 
@@ -131,18 +237,21 @@ Choose solutions that best fit the requirements and consider factors like scalab
 
 ## Storage cost savings
 
+```
 Using data compression as much as possible, using numerical data is much easier to compress
 For example i would not use LineItemID as string, i would use as an integer because when dumping on clickhouse
 That single column will weight a hell lot! its not a problem if data is small but we are taking about
 billion not trillions data points if possible. And we want to show the users as far reports as possible
-Even with these measurement we still have detach 1 year old or 6 month old partition and store it somewhere. 
+Even with these measurement we still have detach 1 year old or 6 month old partition and store it somewhere.
+And data have to partition based on time.
+```
 
 ## Scaling Considerations
 
 As part of your solution, please include a section in your documentation addressing the following questions:
 
 1. How would you scale this service to handle millions of ad requests per minute?
-```bash
+```
 → Stateless microservice architecture
 → Multiple type of database which is easy to scale and can be switch to
   cloud based infra, because when team size is small, it is s better
@@ -153,13 +262,13 @@ As part of your solution, please include a section in your documentation address
 
 ```
 2. What bottlenecks do you anticipate and how would you address them?
-```bash
+```
 → Most complex problem i can imagine is, distribution how much a particulaer bidding server ( there will 100s of bidding server running )
  can spend on campaign. Because we cant forward all the load to one server 
  I would implement some kind algorithm so that a particular bidding server knows how much to spend to prevent over spending
 ```
 3. How would you design the system to ensure high availability and fault tolerance?
-```bash
+```
 → Replication - multiple Kafka brokers, multi-AZ ClickHouse
 
 → Load balancing - distribute traffic
@@ -167,13 +276,13 @@ As part of your solution, please include a section in your documentation address
 → Failover - kubernetes deployment is a must
 ```
 4. What data storage and access patterns would you recommend for different components (line items, tracking events, etc.)?
-```bash
+```
 →  For Storing lineitems - Relational database (postgres,mysql/mariadb)
 →  For For tracking - Columner database (clickhouse,druid)
 ```
 5. How would you implement caching to improve performance?
-```bash
-  I already implemented the type of caching system.
+```
+  I already implemented the type of caching system in this project
 ```
 
 ## Project Structure
@@ -200,4 +309,20 @@ As part of your solution, please include a section in your documentation address
 └── schema.sql              # Clickhouse database schema
 ```
 
-## Performance test and Results
+## Overall Performance test
+
+```
+First: I'm really sorry i didn't use FindMatchingLineItems() function in my getAd()
+Because it would drag the performance down i would not be able to practically test
+and see what my algorithm did on a performance basis so i wrote that part on the
+Add selection algorithm You can take a look there.
+```
+
+### Ads selection load test
+![Cli](https://i.postimg.cc/wM1GF9cP/getad-loadtest-cli.png)
+![Graphana](https://i.postimg.cc/MTNhCcTx/getad-loadtest-graphana.png)
+
+### Tracking feature load test
+![Cli](https://i.postimg.cc/rwj78Zmf/tracking-load-test-cli.png)
+![Graphana](https://i.postimg.cc/dVwzccq7/tracking-load-graphana.png)
+
