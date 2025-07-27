@@ -317,10 +317,17 @@ Add selection algorithm You can take a look there.
 ```
 
 ### Ads selection load test
+```bash
+wrk -t10 -c400 -d600s -s ./load_test.lua http://localhost:8080
+```
+
 ![Cli](https://i.postimg.cc/wM1GF9cP/getad-loadtest-cli.png)
 ![Graphana](https://i.postimg.cc/MTNhCcTx/getad-loadtest-graphana.png)
 
 ### Tracking feature load test
+```bash
+wrk -t10 -c400 -d300s -s ./tracking_load.lua http://localhost:8080
+```
 ![Cli](https://i.postimg.cc/rwj78Zmf/tracking-load-test-cli.png)
 ![Graphana](https://i.postimg.cc/dVwzccq7/tracking-load-graphana.png)
 
