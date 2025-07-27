@@ -2,9 +2,7 @@
 
 ## Overview
 
-You are tasked with extending an ad bidding service responsible for managing and serving advertisements.
-
-The service is built using Go with the Fiber framework and provides basic functionality for creating ad line items.
+Ad Bidding service Coupled with Kafka,ClickHouse,prometheus and Graphana
 
 ## Task Requirements
 
