@@ -317,6 +317,7 @@ Add selection algorithm You can take a look there.
 ```
 
 ### Ads selection load test
+.lua files are in the https://github.com/aniruddha-chakraborty/hiring-software-engineer-task-test project
 ```bash
 wrk -t10 -c400 -d600s -s ./load_test.lua http://localhost:8080
 ```
