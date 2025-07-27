@@ -8,8 +8,8 @@ services:
       - "8080:8080"
       - "9100:9100"
     environment:
-      - APP_ENVIRONMENT=development
-      - APP_LOG_LEVEL=debug
+      - APP_ENVIRONMENT=production
+      - APP_LOG_LEVEL=info
       - SERVER_PORT=8080
       - SERVER_TIMEOUT=30s
       - BROKER=kafka:9092
@@ -44,23 +44,25 @@ services:
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
       ALLOW_PLAINTEXT_LISTENER: "yes"
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+    logging:
+      driver: "none"
     networks:
       - ad-network
 
-#  kafka-exporter:
-#    image: bitnami/jmx-exporter:0.20.0
-#    container_name: kafka-exporter
-#    ports:
-#      - "5556:5556"
-#    environment:
-#      JMX_SERVICE_URL: "service:jmx:rmi:///jndi/rmi://kafka:9999/jmxrmi"
-#    restart: unless-stopped
-#    volumes:
-#      - ./jmx-exporter-config.yml:/opt/bitnami/jmx-exporter/config.yml
-#    networks:
-#      - ad-network
-#    depends_on:
-#      - kafka
+  kafka-exporter:
+    image: bitnami/jmx-exporter:0.20.0
+    container_name: kafka-exporter
+    ports:
+      - "5556:5556"
+    environment:
+      JMX_SERVICE_URL: "service:jmx:rmi:///jndi/rmi://kafka:9999/jmxrmi"
+    restart: unless-stopped
+    volumes:
+      - ./jmx-exporter-config.yml:/opt/bitnami/jmx-exporter/config.yml
+    networks:
+      - ad-network
+    depends_on:
+      - kafka
 
   clickhouse:
     image: clickhouse/clickhouse-server:23.8
@@ -81,6 +83,8 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+    logging:
+      driver: "none"
     networks:
       - ad-network
     depends_on:

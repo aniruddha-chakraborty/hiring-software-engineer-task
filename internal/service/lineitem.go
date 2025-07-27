@@ -98,6 +98,12 @@ func (s *LineItemService) GetAll(advertiserID, placement string) ([]*model.LineI
 	return result, nil
 }
 
+func (s *LineItemService) Update(item model.LineItem) (*model.LineItem, error) {
+	// We can use this method to re-create the above maps and hotswap it with a write lock
+	// This
+	return &model.LineItem{}, nil
+}
+
 // FindMatchingLineItems finds line items matching the given placement and filters
 // This method will be used by the AdService when implementing the ad selection logic
 func (s *LineItemService) FindMatchingLineItems(placement string, category, keyword string) ([]*model.LineItem, error) {

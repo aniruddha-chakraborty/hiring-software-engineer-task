@@ -32,7 +32,7 @@ This repository provides a basic service structure to get started:
 
 ```bash
 # Build and start the service
-docker-compose up -d
+docker compose down -v && docker compose up --build -d
 
 # Check service status
 curl http://localhost:8080/health
@@ -53,6 +53,13 @@ curl -X POST http://localhost:8080/api/v1/lineitems \
 # Get winning ads for a placement (you'll need to implement this)
 curl -X GET "http://localhost:8080/api/v1/ads?placement=homepage_top&category=electronics&keyword=discount"
 ```
+## Test 
+
+```bash
+
+
+```
+
 
 ## Configuration
 

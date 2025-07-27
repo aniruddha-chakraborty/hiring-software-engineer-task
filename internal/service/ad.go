@@ -16,6 +16,12 @@ var CoreScoring map[string]float64 = map[string]float64{
 	"paramWeight":    5,
 }
 
+// We can implement catagory specific scoring
+var CategoryScoring map[string]float64 = map[string]float64{}
+
+// We can implement keywords specific scoring as well and add with existing implemented scoring
+var KeyWordsScoring map[string]float64 = map[string]float64{}
+
 type AdService struct {
 	logs      *zap.SugaredLogger
 	runTimeDB *RunTimeDB
@@ -32,7 +38,6 @@ func NewAdService(log *zap.SugaredLogger, runTimeDB *RunTimeDB, lis *LineItemSer
 
 // This whole thing optimises the FindMatchingLineItems and the ad selection part together, It's much more efficient
 func (s *AdService) GetAd(placement string, keyword string, category string, limit int) ([]*model.Ad, error) {
-
 	if len(s.runTimeDB.GetPlacements(placement)) == 0 {
 		return []*model.Ad{}, nil
 	}
@@ -59,7 +64,7 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 		buckets[idx] = append(buckets[idx], item)
 	}
 	// bucket sort prep ends
-	// There can be lineitems that does not have any targeting, created separate step for that
+	// There can be lineitems that does not have any targeting, created separate step for this use case
 	score := s.runTimeDB.GetInitialScoringWithTargetFreeItems()
 	paramMatch := map[string]int{}
 	// Initial scoring loop
