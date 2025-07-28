@@ -242,6 +242,12 @@ That single column will weight a hell lot! its not a problem if data is small bu
 billions, if not trillions data points if possible. And we want to show the users as far reports as possible
 Even with these measurement we still have detach 1 year old or 6 month old partition and store it somewhere.
 And data have to partition based on time.
+
+On the other hand, LineItemID could be a very very useful tool, if we use Lowcardnility() like feature, which
+means number of total campaign ID will be storage limit though small sacrifice, it's possible to do data sharding
+depends on that LineItemID, we can write a service that can look at the LineItemID string, decrypt it, and figure
+out where this data will go. In this way. it's much easier to maintain seperate client with all their rules with
+data protection. No one, have access each other data!
 ```
 
 ## Scaling Considerations
