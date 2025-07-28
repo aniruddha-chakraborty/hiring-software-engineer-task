@@ -47,14 +47,14 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 	// Applying bucket sort, because as i need limited number of ads, so at scale (5K line items) we don't need to sort the whole array
 	// we just need to sort the highest value bucket until we hit desired amount of result. plus bucket sort is O(N) in insert and retrival
 	// does not need O(N) at all! We can tweak the minBin,maxBid and bucketGap later to increase the performance
-	minBid := 0.01
-	maxBid := 10.0
+	minScore := 0.01
+	maxScore := 10.0
 	bucketGap := 0.50
-	bucketCount := int(math.Ceil((maxBid - minBid) / bucketGap))
+	bucketCount := int(math.Ceil((maxScore - minScore) / bucketGap))
 	buckets := make([][]*model.LineItem, bucketCount)
 
 	insertIntoBucket := func(item *model.LineItem, score float64) {
-		idx := int((score - minBid) / bucketGap)
+		idx := int((score - minScore) / bucketGap)
 		if idx < 0 {
 			idx = 0
 		}
@@ -125,6 +125,7 @@ func (s *AdService) GetAd(placement string, keyword string, category string, lim
 				Placement:    s.lis.items[ad.ID].Placement,
 				ServeURL:     fmt.Sprintf("https://content.realtimemediatool.com/data/%s", ad.ID),
 				// Normally, there will be multiple keywords and you need to match with
+				//Relevance: (paramMatch[ad.ID] * 100) / s.runTimeDB.ParameterCount[ad.ID] - previous logic
 				Relevance: relevanceSore[ad.ID],
 			})
 			if len(result) == limit {
